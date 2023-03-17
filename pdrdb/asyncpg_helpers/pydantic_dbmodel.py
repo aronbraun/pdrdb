@@ -5,14 +5,15 @@ from typing import Optional, List, Type, TypeVar, Any, ClassVar, Generic, Genera
 
 import asyncpg
 import sqlalchemy
+from fastapi import HTTPException
 from sqlalchemy.dialects.postgresql import Insert
 from sqlalchemy.sql import Update, Select, Delete
 from sqlalchemy.sql.base import ColumnCollection
 
 from pdrdb.db.implementation import get_db, DBIntegrity
-from app.helpers.query_helpers import ALL_COLUMNS
-from app.helpers.exceptions import HTTP404
-from app.pydantic_ext import BaseModel, dbable_encoder
+from pdrdb.pydantic_ext import BaseModel, dbable_encoder
+
+ALL_COLUMNS = sqlalchemy.text('*')
 
 TSelf = TypeVar('TSelf')
 T = TypeVar('T')
@@ -229,7 +230,7 @@ class _WrappedStmt(Generic[T]):
         return self.fetchrow().__await__()
 
     def returning(self: TSelf, *cols) -> TSelf:
-        self._returning = () # noqa
+        self._returning = ()  # noqa
         return super().returning(*cols)
 
 
@@ -309,5 +310,5 @@ class WrappedDelete(MyWrappedQuery, Delete):
         async with DBIntegrity({}) as sess:
             response = await sess.fetch(self)
             if not response:
-                raise HTTP404(detail=self.error_detail)
+                raise HTTPException(404, detail=self.error_detail)
             return response

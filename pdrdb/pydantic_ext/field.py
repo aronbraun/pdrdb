@@ -13,7 +13,7 @@ if typing.TYPE_CHECKING:
 
 __all__ = ["ValidatedValue", "WrappedValue", "PhoneNumber", "AdaptedType", "CommaDelimitedList"]
 
-from .validators import validate_phone_number
+from pdrdb.pydantic_ext.validators import validate_phone_number
 
 T = t.TypeVar("T")
 Validator = t.Callable[[T], T]

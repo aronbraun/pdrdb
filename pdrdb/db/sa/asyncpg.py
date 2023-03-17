@@ -4,15 +4,12 @@ import decimal
 import re
 import uuid
 import warnings
-from functools import cached_property
 from typing import Union, Optional
 
 import asyncpg
 import sqlalchemy.dialects.postgresql.asyncpg
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import ClauseElement
-
-from settings import DATABASE
 
 
 def _get_dialect() -> Dialect:
@@ -137,7 +134,6 @@ class ExtendedConnection(asyncpg.Connection):
 
 
 def get_sql_type(val):
-
     if val is None:
         return ''
     if isinstance(val, datetime.datetime):
@@ -153,7 +149,7 @@ def get_sql_type(val):
     if isinstance(val, uuid.UUID):
         return 'uuid'
     if isinstance(val, int):
-        if val > 2**32:
+        if val > 2 ** 32:
             return 'bigint'
         else:
             return 'int'
@@ -243,20 +239,21 @@ class QueryContext:
 
 
 server_settings = {
-        'search_path': 'public',
-        'timezone': 'UTC',
-        'application_name': 'fastapi'
-        }
-
+    'search_path': 'public',
+    'timezone': 'UTC',
+    'application_name': 'fastapi'
+}
 
 try:
     import ujson as my_json
+
 
     def json_encode(content):
         return my_json.dumps(content, ensure_ascii=False).encode('utf-8')
 
 except ImportError:
     import json as my_json
+
 
     def json_encode(content):
         return my_json.dumps(
@@ -354,13 +351,6 @@ async def setup_asyncpg_connection(conn: ExtendedConnection):
     # )
 
 
-def create_new_pool():
-    return asyncpg.create_pool(
-        DATABASE.DSN, ssl=False, min_size=1, max_size=20, init=setup_asyncpg_connection,
-        server_settings=server_settings, connection_class=ExtendedConnection
-    )
-
-
 class ResultException(Exception):
     pass
 
@@ -423,6 +413,14 @@ class ResultWrapper:
         yield from self.rows
 
 
+DSN: str = None
+
+
+def init_db(dsn: str):
+    global DSN
+    DSN = dsn
+
+
 class MySingleDBConnectionClass:
     _lock = asyncio.Lock()
     _pool = None
@@ -431,7 +429,10 @@ class MySingleDBConnectionClass:
     async def init_pool(cls):
         async with cls._lock:
             if cls._pool is None or cls._pool._closed:  # noqa
-                cls._pool = create_new_pool()
+                cls._pool = asyncpg.create_pool(
+                    DSN, ssl=False, min_size=1, max_size=20, init=setup_asyncpg_connection,
+                    server_settings=server_settings, connection_class=ExtendedConnection
+                )
             await cls._pool
 
     @property
@@ -439,6 +440,7 @@ class MySingleDBConnectionClass:
         return self._pool
 
     def __init__(self, auto_commit=True):
+        assert DSN is not None, 'Missing Database dsn'
         if not auto_commit:
             raise AssertionError('This should always be true?')
         self._levels = 0

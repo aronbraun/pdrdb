@@ -13,6 +13,15 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url='https://github.com/gizber-donations/pdrdb',
     license='MIT',
-    packages=['pdrdb'],
-    # install_requires=['will-see'],
+    packages=setuptools.find_packages(),
+    install_requires=[
+        "asyncpg==0.27.0",
+        "fastapi==0.94.1",
+        "phonenumbers==8.13.7",
+        "psycopg2==2.9.5",
+        "setuptools==65.6.3",
+        "sqlacodegen==3.0.0b2",
+        "SQLAlchemy==1.4.26",
+        "starlette==0.26.1",
+    ],
 )

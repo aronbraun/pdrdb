@@ -9,12 +9,6 @@ from fastapi.datastructures import DefaultPlaceholder
 from fastapi.dependencies.models import Dependant
 from fastapi.dependencies.utils import get_flat_dependant, get_flat_params
 from fastapi.encoders import jsonable_encoder
-from .constants import (
-    METHODS_WITH_BODY,
-    REF_PREFIX,
-    STATUS_CODES_WITH_NO_BODY,
-)
-from .models import OpenAPI
 from fastapi.params import Body, Param
 from fastapi.responses import Response
 from fastapi.utils import (
@@ -33,6 +27,13 @@ from pydantic.utils import lenient_issubclass
 from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute
 from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
+
+from pdrdb.openapi.constants import (
+    METHODS_WITH_BODY,
+    REF_PREFIX,
+    STATUS_CODES_WITH_NO_BODY,
+)
+from pdrdb.openapi.models import OpenAPI
 
 validation_error_definition = {
     "title": "ValidationError",

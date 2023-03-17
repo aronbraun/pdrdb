@@ -15,13 +15,14 @@ from uuid import UUID
 #  sqlacodegen==3.0.0b2
 import sqlacodegen.generators
 import sqlacodegen.models
-from sqlalchemy import Table
+from sqlalchemy import Table, create_engine
 from sqlalchemy.sql.base import ColumnCollection
 
-from asyncpg_helpers.reflection_engine import reflect, metadata as _metadata, sync_engine as engine
+from pdrdb.asyncpg_helpers.reflection_engine import reflect, metadata as _metadata
+
+_args = None
 
 CUSTOM_TYPE_MAP = {}
-
 
 TYPE_MAP = {
     str: 'str',
@@ -99,12 +100,17 @@ def class_name_for_table(table_name: str, schema_name: str = '') -> str:
     return name
 
 
-def generate_sa_models(base_package: types.ModuleType):
+def generate_sa_models(base_package: types.ModuleType, dsn: str, schemas: str | list):
+    engine = create_engine(
+        dsn.replace('postgresql+asyncpg://', 'postgresql://'),
+        connect_args={"options": "-csearch_path=public"},
+    )
+
     package_path = base_package.__path__[0]
 
     custom_types_module = importlib.import_module('.custom_types', f'{base_package.__name__}.auto_generated')
 
-    reflect(custom_types_module=custom_types_module)
+    reflect(engine, schemas, custom_types_module=custom_types_module)
 
     auto_generated_path = os.path.join(package_path, 'auto_generated')
 
@@ -469,9 +475,12 @@ def create_base_packages(package_path: str):
     return package
 
 
-def run(generated_package: types.ModuleType):
+def main(generated_dir: str, dsn: str, schemas: str | list | tuple):
+    generated_models_package_name = os.path.basename(generated_dir)
+    assert re.match('^[a-zA-Z0-9_]+', generated_models_package_name), 'packagename must be a valid python package name'
+    generated_package = create_base_packages(generated_dir)
 
-    generate_sa_models(generated_package)
+    generate_sa_models(generated_package,  dsn, schemas)
 
     # schemas = [key for key in models.__dict__ if not key.startswith('_')]
 
@@ -492,7 +501,7 @@ def write_pydantic_models(generated_package: types.ModuleType, imports, pydantic
         from ipaddress import IPv4Address  # noqa
         from pydantic import IPvAnyInterface  # noqa
 
-        from asyncpg_helpers.pydantic_dbmodel import DBModel
+        from pdrdb.asyncpg_helpers.pydantic_dbmodel import DBModel
         from pdrdb.pydantic_ext import DateTimeTZRange  # noqa
         from pdrdb.pydantic_ext import optional  # noqa
 
@@ -520,7 +529,7 @@ def generate_pydantic_models(generated_package: types.ModuleType, tables: dict[s
 
         (f'\n\nif typing.TYPE_CHECKING:\n'
          f'    from {generated_package.__name__}.auto_generated import sqlalchemy_tables\n\n\n'),
-       ]
+    ]
 
     base_module = importlib.import_module('.base', generated_package.__name__)
 
@@ -562,16 +571,6 @@ def generate_pydantic_models(generated_package: types.ModuleType, tables: dict[s
     return imports, classes
 
 
-def main(generated_dir: str):
-    generated_models_package_name = os.path.basename(generated_dir)
-
-    assert re.match('^[a-zA-Z0-9_]+', generated_models_package_name), 'packagename must be a valid python package name'
-
-    package = create_base_packages(generated_dir)
-
-    run(package)
-
-
 def run_cli():
     try:
         import generated_models
@@ -581,7 +580,7 @@ def run_cli():
     if generated_models:
         default_dir = generated_models.__path__[0]
     else:
-        default_dir = ''
+        default_dir = 'generated_models'
 
     import argparse
     parser = argparse.ArgumentParser(__name__)
@@ -590,11 +589,25 @@ def run_cli():
         dest='generated_path',
         default=default_dir,
         required=not default_dir,
-        help='Directory where to generate models',
+        help='Directory where to generate models, default to "generated_models"',
+    )
+    parser.add_argument(
+        '--dsn', '-db',
+        dest='dsn',
+        required=True,
+        help='the asyncpg database dsn string for the db connection'
+    )
+    parser.add_argument(
+        '--schemas', '-s',
+        nargs='+',
+        dest='schemas',
+        required=False,
+        default='public',
+        help='the schemas to generate default to "public"'
     )
 
     args = parser.parse_args(sys.argv[1:])
-    main(generated_dir=args.generated_path)
+    main(generated_dir=args.generated_path, dsn=args.dsn, schemas=args.schemas)
 
 
 if __name__ == '__main__':

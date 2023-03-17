@@ -2,26 +2,23 @@ import datetime
 import functools
 import inspect
 import json
-import sys
 import typing
 import warnings
 from decimal import Decimal
 from enum import Enum
 from typing import Union, Tuple, Dict, Any, Type, Optional, no_type_check, List, Callable, overload
 
-from fastapi.encoders import jsonable_encoder
-
 import psycopg2.extensions
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel as _BaseModel, DateTimeError, ValidationError
 from pydantic.error_wrappers import ErrorWrapper
 from pydantic.fields import ModelField
 from pydantic.json import ENCODERS_BY_TYPE
-from pydantic.schema import encode_default, default_ref_template, model_schema
-from pydantic.validators import parse_datetime
-from sqlalchemy.dialects.postgresql import TSTZRANGE
-
-from .field import PhoneNumber, AdaptedType, CommaDelimitedList
+from pydantic.schema import encode_default, default_ref_template
 from pydantic.typing import is_callable_type
+from pydantic.validators import parse_datetime
+
+from pdrdb.pydantic_ext.field import PhoneNumber, AdaptedType, CommaDelimitedList
 
 if typing.TYPE_CHECKING:
     from pydantic.typing import DictStrAny
@@ -233,7 +230,7 @@ def patch_pydantic_field_type_schema() -> None:
     """
     warnings.warn("Patching fastapi.applications.get_openapi")
     import fastapi.applications
-    from app.openapi.utils import get_openapi
+    from pdrdb.openapi.utils import get_openapi
     fastapi.applications.get_openapi = get_openapi
 
     warnings.warn("Patching pydantic.schema.field_type_schema")

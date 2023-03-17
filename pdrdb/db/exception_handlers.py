@@ -4,7 +4,6 @@ from typing import Union
 from asyncpg.exceptions import PostgresError
 from fastapi import HTTPException
 from psycopg2 import DatabaseError
-from sqlalchemy.dialects.postgresql.asyncpg import AsyncAdapt_asyncpg_dbapi
 
 from pdrdb.db.sa.constraint_mappings import CONSTRAINT_NAME_MAPPING
 

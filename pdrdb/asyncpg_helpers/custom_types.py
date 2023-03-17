@@ -128,7 +128,7 @@ def write_custom_types_file(generated_types: List[str], save_path: str):
     imports = [
         'from typing import NamedTuple, List, cast, Type',
         'from sqlalchemy import Column',
-        'from asyncpg_helpers.custom_types import CompositeType',
+        'from pdrdb.asyncpg_helpers.custom_types import CompositeType',
         'from collections import namedtuple',
     ]
 
