@@ -122,7 +122,7 @@ def generate_sa_models(base_package: types.ModuleType, dsn: str, schemas: str | 
     generator = TableStubGenerator(metadata=_metadata, bind=engine, options=set())
     generator.write_to_file(tables_types_path)
 
-    generator = DeclarativeGenerator(base_package=base_package, metadata=_metadata, bind=engine, options={'nojoined'})
+    generator = DeclarativeGenerator(base_package=base_package, metadata=_metadata, bind=engine, options={'nojoined', 'nobidi'})
     generator.write_to_model_schema_files(models_path)
 
     generate_sa_tables_from_sa_models(base_package)
