@@ -11,6 +11,8 @@ import sqlalchemy.dialects.postgresql.asyncpg
 from sqlalchemy.engine import Dialect
 from sqlalchemy.sql import ClauseElement
 
+from pdrdb.db.sa import asyncpg_fixups  # noqa
+
 
 def _get_dialect() -> Dialect:
     dialect = sqlalchemy.dialects.postgresql.asyncpg.dialect(paramstyle="pyformat")
