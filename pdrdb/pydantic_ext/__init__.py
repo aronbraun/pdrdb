@@ -187,7 +187,6 @@ ENCODERS_BY_TYPE[Decimal] = str
 
 
 def get_field_info_schema(field: ModelField, schema_overrides: bool = False) -> Tuple[Dict[str, Any], bool]:
-
     # If no title is explicitly set, we don't set title in the schema for enums.
     # The behaviour is the same as `BaseModel` reference, where the default title
     # is in the definitions part of the schema.
@@ -203,11 +202,11 @@ def get_field_info_schema(field: ModelField, schema_overrides: bool = False) -> 
         schema_overrides = True
 
     if (
-        not field.required
-        and not field.field_info.const
-        and field.default is not None
-        and not is_callable_type(field.outer_type_)
-        and field.default is not DB_DEFAULT
+            not field.required
+            and not field.field_info.const
+            and field.default is not None
+            and not is_callable_type(field.outer_type_)
+            and field.default is not DB_DEFAULT
     ):
         schema_['default'] = encode_default(field.default)
         schema_overrides = True
@@ -216,8 +215,8 @@ def get_field_info_schema(field: ModelField, schema_overrides: bool = False) -> 
 
 
 import pydantic.schema
-pydantic.schema.get_field_info_schema = get_field_info_schema
 
+pydantic.schema.get_field_info_schema = get_field_info_schema
 
 # This reference to the actual pydantic field_type_schema method is only loaded once
 pydantic_field_type_schema = pydantic.schema.field_type_schema
@@ -277,7 +276,6 @@ def patch_pydantic_field_type_schema() -> None:
 
 patch_pydantic_field_type_schema()
 
-
 T = typing.TypeVar('T')
 
 
@@ -312,6 +310,7 @@ def exclude(*fields):
             cls.__fields__.pop(f)
             cls.__annotations__.pop(f, None)
         return cls
+
     return dec
 
 
@@ -397,11 +396,19 @@ def range_to_dict(r: Range):
     }
 
 
-def range_as_is(r: Range):
-    return r
-
-
 ENCODERS_BY_TYPE[Range] = range_to_dict
 
 
-dbable_encoder = functools.partial(jsonable_encoder, custom_encoder={Range: range_as_is})
+def return_as_is(r: T) -> T:
+    return r
+
+
+DB_CUSTOM_ENCODERS_BY_TYPE = {
+    Range: return_as_is,
+    datetime.datetime: return_as_is,
+    datetime.date: return_as_is,
+    datetime.time: return_as_is,
+    datetime.timedelta: return_as_is,
+}
+
+dbable_encoder = functools.partial(jsonable_encoder, custom_encoder=DB_CUSTOM_ENCODERS_BY_TYPE)
